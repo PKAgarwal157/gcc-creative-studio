@@ -73,6 +73,9 @@ async def get_current_user(
 
         email = decoded_token.get("email")
         name = decoded_token.get("name")
+        if not name or len(name) < 2:
+            prefix = email.split("@")[0] if email else "User"
+            name = prefix if len(prefix) >= 2 else prefix + " User"
         picture = decoded_token.get("picture", "")
         token_info_hd = decoded_token.get("hd")
 
