@@ -38,9 +38,7 @@ import { NotificationService } from '../common/services/notification.service';
 
 // Define a MockAuthService class
 class MockAuthService {
-  signInWithGoogleFirebase = jasmine.createSpy('signInWithGoogleFirebase');
-  signInForGoogleIdentityPlatform = jasmine.createSpy('signInForGoogleIdentityPlatform');
-  // Add any other methods from AuthService that are called in LoginComponent
+  signInWithMicrosoft = jasmine.createSpy('signInWithMicrosoft');
 }
 
 describe('LoginComponent', () => {
@@ -103,135 +101,61 @@ describe('LoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('loginWithGoogle', () => {
+  describe('loginWithMicrosoft', () => {
     beforeEach(() => {
       consoleErrorSpy = spyOn(console, 'error');
     });
-          it('should show loader and reset error flags', fakeAsync(() => {
-            authService.signInWithGoogleFirebase.and.returnValue(NEVER); // Use NEVER to prevent completion or error
-            authService.signInForGoogleIdentityPlatform.and.returnValue(NEVER); // Use NEVER
-            component.loader = false;
-            component.invalidLogin = true;
-            component.errorMessage = 'Old error';
-    
-            component.loginWithGoogle();
-            // fixture.detectChanges(); // autoDetectChanges is true
-    
-            expect(component.loader).toBeTrue();
-            expect(component.invalidLogin).toBeFalse();
-            expect(component.errorMessage).toBe('');
-          }));
-    describe('in local environment', () => {
-      beforeEach(() => {
-        (environment as any).isLocal = true;
-      });
 
-      it('should call signInWithGoogleFirebase and navigate on success', fakeAsync(() => {
-        authService.signInWithGoogleFirebase.and.returnValue(
-          of('test-token'),
-        );
-        spyOn(router, 'navigate');
+    it('should show loader and reset error flags', fakeAsync(() => {
+      authService.signInWithMicrosoft.and.returnValue(NEVER);
+      component.loader = false;
+      component.invalidLogin = true;
+      component.errorMessage = 'Old error';
 
-        component.loginWithGoogle();
-        tick();
+      component.loginWithMicrosoft();
 
-        expect(authService.signInWithGoogleFirebase).toHaveBeenCalled();
-        expect(component.loader).toBeFalse();
-        expect(router.navigate).toHaveBeenCalledWith(['/']);
-      }));
+      expect(component.loader).toBeTrue();
+      expect(component.invalidLogin).toBeFalse();
+      expect(component.errorMessage).toBe('');
+    }));
 
-      it('should handle error from signInWithGoogleFirebase', fakeAsync(() => {
-        consoleErrorSpy.and.stub();
-        const error = new Error('Access Denied');
-        authService.signInWithGoogleFirebase.and.returnValue(
-          throwError(() => error),
-        );
-        spyOn(component, 'handleLoginError' as any);
+    it('should call signInWithMicrosoft and navigate on success', fakeAsync(() => {
+      authService.signInWithMicrosoft.and.returnValue(of('test-token'));
+      spyOn(router, 'navigate');
 
-        component.loginWithGoogle();
-        tick();
+      component.loginWithMicrosoft();
+      tick();
 
-        expect(component.loader).toBeFalse();
-        expect((component as any).handleLoginError).toHaveBeenCalledWith(
-          error,
-        );
-      }));
+      expect(authService.signInWithMicrosoft).toHaveBeenCalled();
+      expect(component.loader).toBeFalse();
+      expect(router.navigate).toHaveBeenCalledWith(['/']);
+    }));
 
-      it('should handle string error from signInWithGoogleFirebase', fakeAsync(() => {
-        consoleErrorSpy.and.stub();
-        const error = 'An unexpected error occurred';
-        authService.signInWithGoogleFirebase.and.returnValue(
-          throwError(() => error),
-        );
-        spyOn(component, 'handleLoginError' as any);
+    it('should handle error from signInWithMicrosoft', fakeAsync(() => {
+      consoleErrorSpy.and.stub();
+      const error = new Error('Access Denied');
+      authService.signInWithMicrosoft.and.returnValue(throwError(() => error));
+      spyOn(component, 'handleLoginError' as any);
 
-        component.loginWithGoogle();
-        tick();
+      component.loginWithMicrosoft();
+      tick();
 
-        expect(component.loader).toBeFalse();
-        expect((component as any).handleLoginError).toHaveBeenCalledWith(
-          error,
-        );
-      }));
-    });
+      expect(component.loader).toBeFalse();
+      expect((component as any).handleLoginError).toHaveBeenCalledWith(error);
+    }));
 
-    describe('in non-local environment', () => {
-      beforeEach(() => {
-        (environment as any).isLocal = false;
-      });
+    it('should handle string error from signInWithMicrosoft', fakeAsync(() => {
+      consoleErrorSpy.and.stub();
+      const error = 'An unexpected error occurred';
+      authService.signInWithMicrosoft.and.returnValue(throwError(() => error));
+      spyOn(component, 'handleLoginError' as any);
 
-      it('should call signInForGoogleIdentityPlatform and navigate on success', fakeAsync(() => {
-        authService.signInForGoogleIdentityPlatform.and.returnValue(
-          of('test-token'),
-        );
-        spyOn(router, 'navigate');
+      component.loginWithMicrosoft();
+      tick();
 
-        component.loginWithGoogle();
-        tick();
-
-        expect(
-          authService.signInForGoogleIdentityPlatform,
-        ).toHaveBeenCalled();
-        expect(component.loader).toBeFalse();
-        expect(router.navigate).toHaveBeenCalledWith(['/']);
-      }));
-
-      it('should handle error from signInForGoogleIdentityPlatform', fakeAsync(() => {
-        consoleErrorSpy.and.stub();
-        const error = new Error(
-          'An unexpected error occurred during sign-in. Please try again.',
-        );
-        authService.signInForGoogleIdentityPlatform.and.returnValue(
-          throwError(() => error),
-        );
-        spyOn(component, 'handleLoginError' as any);
-
-        component.loginWithGoogle();
-        tick();
-
-        expect(component.loader).toBeFalse();
-        expect((component as any).handleLoginError).toHaveBeenCalledWith(
-          error,
-        );
-      }));
-
-      it('should handle string error from signInForGoogleIdentityPlatform', fakeAsync(() => {
-        consoleErrorSpy.and.stub();
-        const error = 'An unexpected error occurred';
-        authService.signInForGoogleIdentityPlatform.and.returnValue(
-          throwError(() => error),
-        );
-        spyOn(component, 'handleLoginError' as any);
-
-        component.loginWithGoogle();
-        tick();
-
-        expect(component.loader).toBeFalse();
-        expect((component as any).handleLoginError).toHaveBeenCalledWith(
-          error,
-        );
-      }));
-    });
+      expect(component.loader).toBeFalse();
+      expect((component as any).handleLoginError).toHaveBeenCalledWith(error);
+    }));
   });
 
   describe('handleLoginError', () => {

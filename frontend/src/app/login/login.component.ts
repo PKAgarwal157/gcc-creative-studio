@@ -58,74 +58,25 @@ export class LoginComponent {
 
   ngOnInit(): void {}
 
-  loginWithGoogle() {
+  loginWithMicrosoft() {
     this.loader = true;
     this.invalidLogin = false;
     this.errorMessage = '';
 
-    if (environment?.isLocal) {
-      // This will use the Google Identity Services library to get an FIREBASE-compatible token.
-      this.authService.signInWithGoogleFirebase().subscribe({
-        next: (firebaseToken: string) => {
-          // The signInForGoogleIdentityPlatform method already stored the token and minimal user details
-          // in localStorage. We just need to redirect to trigger the AuthGuard.
-          this.ngZone.run(() => {
-            this.loader = false;
-            void this.router.navigate([HOME_ROUTE]);
-          });
-        },
-        error: error => {
+    this.authService.signInWithMicrosoft().subscribe({
+      next: (firebaseToken: string) => {
+        this.ngZone.run(() => {
           this.loader = false;
-          console.log(error);
-          // Handle specific errors from the auth service
-          if (
-            error.message?.includes('timed out') ||
-            error.message?.includes('Access Denied')
-          ) {
-            this.handleLoginError(error);
-          } else {
-            this.handleLoginError(
-              error || {
-                message:
-                  'An unexpected error occurred during sign-in. Please try again.',
-              },
-            );
-          }
-          console.error('FIREBASE Login Process Error:', error);
-        },
-      });
-    } else {
-      // This will use the Google Identity Services library to get an FIREBASE-compatible token.
-      this.authService.signInForGoogleIdentityPlatform().subscribe({
-        next: (firebaseToken: string) => {
-          // The signInForGoogleIdentityPlatform method already stored the token and minimal user details
-          // in localStorage. We just need to redirect to trigger the AuthGuard.
-          this.ngZone.run(() => {
-            this.loader = false;
-            void this.router.navigate([HOME_ROUTE]);
-          });
-        },
-        error: error => {
-          this.loader = false;
-          console.log(error);
-          // Handle specific errors from the auth service
-          if (
-            error.message?.includes('timed out') ||
-            error.message?.includes('Access Denied')
-          ) {
-            this.handleLoginError(error);
-          } else {
-            this.handleLoginError(
-              error || {
-                message:
-                  'An unexpected error occurred during sign-in. Please try again.',
-              },
-            );
-          }
-          console.error('FIREBASE Login Process Error:', error);
-        },
-      });
-    }
+          void this.router.navigate([HOME_ROUTE]);
+        });
+      },
+      error: error => {
+        this.loader = false;
+        console.log(error);
+        this.handleLoginError(error);
+        console.error('FIREBASE Login Process Error:', error);
+      },
+    });
   }
 
   private handleLoginError(

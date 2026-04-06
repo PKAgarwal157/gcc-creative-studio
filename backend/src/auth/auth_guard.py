@@ -14,9 +14,9 @@
 
 import asyncio
 import logging
-from typing import List
+from typing import List, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
 
@@ -33,43 +33,45 @@ from src.users.user_service import UserService
 
 # This scheme will require the client to send a token in the Authorization header.
 # It tells FastAPI how to find the token but doesn't validate it itself.
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
 logger = logging.getLogger(__name__)
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
     user_service: UserService = Depends(UserService),
 ) -> UserModel:
     """
     Dependency that handles the entire authentication and user provisioning flow.
 
-    1. Verifies the Firebase ID token.
-    2. Extracts user information (id, email).
-    3. Checks if a user document exists in Firestore.
+    1. Checks standard Authorization header or fallback X-Firebase-App-Auth.
+    2. Verifies the Firebase ID token.
+    3. Extracts user information (id, email).
     4. If the user is new, creates their document ("Just-In-Time Provisioning").
     5. Returns a Pydantic model with the user's data.
     """
+    if not token:
+        # Fallback to custom header to bypass Cloud Shell interception
+        logger.info("AuthGuard: Standard Authorization header missing. Checking X-Firebase-App-Auth...")
+        token = request.headers.get("X-Firebase-App-Auth")
+        if token and token.startswith("Bearer "):
+            token = token[len("Bearer "):]
+            logger.info("AuthGuard: Found X-Firebase-App-Auth header.")
+
+    if not token:
+        logger.warning("AuthGuard: No authentication token found in request headers.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token is missing.",
+        )
+
     try:
-        decoded_token = {}
-        if config_service.ENVIRONMENT == "local":
-            # --- Local: Use Firebase Auth ---
-            # Verifies the token using the standard Firebase Admin SDK method.
-            logger.info("Verifying token using Firebase Admin SDK...")
-            decoded_token = await asyncio.to_thread(auth.verify_id_token, token)
-        else:
-            # --- Development/Production: Use Google Identity Platform (OIDC) ---
-            # Verifies the Google-issued OIDC ID token. The audience must be the
-            # OAuth 2.0 client ID of the Identity Platform-protected resource.
-            GOOGLE_TOKEN_AUDIENCE = config_service.GOOGLE_TOKEN_AUDIENCE
-            decoded_token = await asyncio.to_thread(
-                id_token.verify_oauth2_token,
-                token,
-                google_auth_requests.Request(),
-                audience=GOOGLE_TOKEN_AUDIENCE,
-            )
+        logger.info("AuthGuard: Verifying token using standard Firebase Admin SDK...")
+        decoded_token = await asyncio.to_thread(auth.verify_id_token, token)
+        logger.info(f"AuthGuard: Token verified successfully for {decoded_token.get('email')}")
 
         email = decoded_token.get("email")
         name = decoded_token.get("name")

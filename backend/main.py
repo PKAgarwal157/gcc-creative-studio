@@ -60,7 +60,6 @@ logger = logging.getLogger(__name__)
 def configure_cors(app):
     """Configures CORS middleware based on the environment."""
     environment = getenv("ENVIRONMENT")
-    allowed_origins = []
 
     if environment == "production":
         frontend_url = getenv("FRONTEND_URL")
@@ -68,21 +67,26 @@ def configure_cors(app):
             raise ValueError(
                 "FRONTEND_URL environment variable not set in production"
             )
-        allowed_origins.append(frontend_url)
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[frontend_url],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
     elif environment in ["development", "test", "local"]:
-        allowed_origins.append("*")  # Allow all origins in development
+        logger.info("Configuring CORS for development: allowing all origins without credentials")
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
     else:
         raise ValueError(
             f"Invalid ENVIRONMENT: {environment}. Must be 'production', 'development' or 'local'"
         )
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
 
 @asynccontextmanager

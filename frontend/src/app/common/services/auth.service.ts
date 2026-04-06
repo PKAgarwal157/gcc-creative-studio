@@ -22,7 +22,7 @@ import {environment} from '../../../environments/environment';
 import {Auth, IdTokenResult} from '@angular/fire/auth';
 import {UserService} from '../services/user.service';
 import {
-  GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   UserCredential,
 } from '@angular/fire/auth';
@@ -48,7 +48,7 @@ interface FirebaseSession {
 export class AuthService {
   private readonly auth: Auth = inject(Auth);
   private platformId = inject(PLATFORM_ID);
-  private readonly provider: GoogleAuthProvider = new GoogleAuthProvider();
+  private readonly provider = new OAuthProvider('microsoft.com');
 
   // Store token temporarily in memory for the session
   private currentOAuthAccessToken: string | null = null;
@@ -68,39 +68,41 @@ export class AuthService {
   }
 
   /**
-   * A test sign-in method to get a Google ID token compatible with Firebase.
+   * Sign-in method using Firebase OAuthProvider for Microsoft.
    *
    * @returns An Observable that emits the Firebase-compatible ID token.
    */
-  signInWithGoogleFirebase(): Observable<string> {
+  signInWithMicrosoft(): Observable<string> {
+    console.log('AuthService: signInWithMicrosoft started.');
     return from(signInWithPopup(this.auth, this.provider)).pipe(
-      // Step 1: Get the Firebase ID token from the successful sign-in.
       switchMap((userCredential: UserCredential) => {
         if (!userCredential.user) {
+          console.error('AuthService: Firebase user not found after sign-in.');
           return throwError(
             () => new Error('Firebase user not found after sign-in.'),
           );
         }
+        console.log('AuthService: Sign-in successful, retrieving ID token result.');
         return from(userCredential.user.getIdTokenResult());
       }),
-      // Step 2: Save the session and sync with the backend.
       switchMap((idTokenResult: IdTokenResult) => {
         const token = idTokenResult.token;
         const expirationTime = Date.parse(idTokenResult.expirationTime);
 
-        // Save session details to memory and local storage.
+        console.log('AuthService: ID token retrieved. Length:', token.length);
+
         this.firebaseIdToken = token;
         this.firebaseTokenExpiry = expirationTime;
         const session: FirebaseSession = {token, expiry: expirationTime};
         localStorage.setItem(FIREBASE_SESSION_KEY, JSON.stringify(session));
 
-        // Call the backend to get or create the user profile.
+        console.log('AuthService: Syncing with backend...');
         return this.syncUserWithBackend$(token).pipe(
-          map(() => token), // Pass the token along for the final result.
+          map(() => token),
         );
       }),
       catchError((error: any) => {
-        console.error('An error occurred during the sign-in process:', error);
+        console.error('AuthService: Error during sign-in process:', error);
         return throwError(
           () => new Error(`Sign-in failed. Please try again. ${error}`),
         );
@@ -115,21 +117,20 @@ export class AuthService {
    * 3. If silent refresh fails, it emits an error, signaling a required re-login.
    */
   getValidFirebaseToken$(): Observable<string> {
-    // First, check our own session info which is loaded from localStorage.
-    // This is synchronous and tells us if we have a valid, non-expired token.
+    console.log('AuthService: getValidFirebaseToken$ check.');
     if (!this.isLoggedIn()) {
+      console.warn('AuthService: User context not valid or expired.');
       return throwError(
         () => new Error('User session is not valid or has expired. 1'),
       );
     }
 
-    // If we have a valid session, check if the Firebase Auth instance is ready.
     const currentUser = this.auth.currentUser;
     if (currentUser) {
-      // Ideal case: Auth is ready, so we can force a token refresh to ensure it's fresh.
+      console.log('AuthService: currentUser found, forcing token refresh.');
       return from(currentUser.getIdToken(true)).pipe(
         tap((token: string) => {
-          // Update the in-memory cache and localStorage with the refreshed token info.
+          console.log('AuthService: token refreshed. Length:', token.length);
           const payload = JSON.parse(atob(token.split('.')[1]));
           const expiry = payload.exp * 1000;
 
@@ -142,93 +143,11 @@ export class AuthService {
       );
     }
 
-    // Fallback case: The Firebase Auth instance is not yet initialized, but we
-    // have a valid token from localStorage. We can use this for the current
-    // request. The next request will likely hit the ideal case above.
+    console.log('AuthService: currentUser NOT found, falling back to cached token in localStorage.');
     return of(this.firebaseIdToken!);
   }
 
-  /**
-   * A test sign-in method to get a Google ID token compatible with Identity Platform.
-   *
-   * @returns An Observable that emits the Identity Platform-compatible ID token.
-   */
-  signInForGoogleIdentityPlatform(): Observable<string> {
-    return this.promptForIdentityPlatformToken$().pipe(
-      switchMap(idToken => {
-        const payload = JSON.parse(atob(idToken.split('.')[1]));
-        const userEmail = payload.email?.toLowerCase();
 
-        // If allowed, proceed to save session and return token
-        this.firebaseIdToken = idToken;
-        this.firebaseTokenExpiry = payload.exp * 1000;
-
-        const session: FirebaseSession = {
-          token: idToken,
-          expiry: this.firebaseTokenExpiry,
-        };
-        localStorage.setItem(FIREBASE_SESSION_KEY, JSON.stringify(session));
-
-        // Call the backend to get or create the user profile.
-        return this.syncUserWithBackend$(idToken).pipe(
-          map(() => idToken), // Pass the token along for the final result.
-        );
-      }),
-    );
-  }
-
-  private promptForIdentityPlatformToken$(): Observable<string> {
-    const GOOGLE_CLIENT_ID = environment.GOOGLE_CLIENT_ID;
-
-    return new Observable<string>(observer => {
-      if (typeof google === 'undefined') {
-        return observer.error(
-          new Error(
-            'Google Identity Services script not loaded. Add it to index.html',
-          ),
-        );
-      }
-
-      const loginTimeout = setTimeout(() => {
-        observer.error(
-          new Error(
-            'Login timed out or third party sign-in may be disabled. Please try again and enable third party sign-in by clicking on the information button at the top left side of the browser.',
-          ),
-        );
-      }, 15000);
-
-      try {
-        google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: (response: any) => {
-            clearTimeout(loginTimeout);
-            const idToken = response.credential;
-            if (idToken) {
-              observer.next(idToken);
-              observer.complete();
-            } else {
-              observer.error(
-                new Error(
-                  'Google Sign-In response did not contain a credential.',
-                ),
-              );
-            }
-          },
-        });
-
-        // Trigger the One Tap prompt.
-        // Per new docs, we don't use the notification object for flow control.
-        google.accounts.id.prompt();
-      } catch (error) {
-        clearTimeout(loginTimeout);
-        console.error(
-          'Error during Google Identity Platform sign-in initialization:',
-          error,
-        );
-        observer.error(error);
-      }
-    });
-  }
 
   /**
    * Asynchronously gets a valid Identity Platform token.
@@ -250,9 +169,9 @@ export class AuthService {
   }
 
   private syncUserWithBackend$(token: string): Observable<UserModel> {
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    console.log('AuthService: syncUserWithBackend$ calling /users/me without manual Authorization header.');
     return this.httpClient
-      .get<UserModel>(`${environment.backendURL}/users/me`, {headers})
+      .get<UserModel>(`${environment.backendURL}/users/me`)
       .pipe(
         tap((userDetails: UserModel) => {
           // The backend is the source of truth. Save the returned profile to local storage.

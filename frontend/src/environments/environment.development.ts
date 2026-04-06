@@ -16,13 +16,13 @@
 
 export const environment = {
   firebase: {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    storageBucket: '',
-    messagingSenderId: '',
-    appId: '',
-    measurementId: '',
+    apiKey: 'AIzaSyBvFqZXvhrxF9NH5Xx5WMpNa4SPk8J46CU',
+    authDomain: 'test-project2-491910.firebaseapp.com',
+    projectId: 'test-project2-491910',
+    storageBucket: 'test-project2-491910.firebasestorage.app',
+    messagingSenderId: '115764326296',
+    appId: '1:115764326296:web:7626a2399c78601b8845ed',
+    measurementId: 'G-1QXC10KHMX',
   },
   production: true,
   isLocal: false,

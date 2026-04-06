@@ -35,14 +35,18 @@ export class AuthInterceptor implements HttpInterceptor {
     request: HttpRequest<unknown>,
     next: HttpHandler,
   ): Observable<HttpEvent<unknown>> {
-    // Asynchronously get a valid token. This will use the cache or trigger a silent refresh.
-    return this.authService.getValidIdentityPlatformToken$().pipe(
+    console.log(`AuthInterceptor: Intercepting request to ${request.url}`);
+    return this.authService.getValidFirebaseToken$().pipe(
       switchMap(token => {
-        // Token was retrieved successfully. Clone the request and add the auth header.
+        console.log(`AuthInterceptor: Token retrieved, appending X-Firebase-App-Auth header. Token Length: ${token.length}`);
         const authorizedRequest = request.clone({
-          setHeaders: {Authorization: `Bearer ${token}`},
+          setHeaders: {'X-Firebase-App-Auth': `Bearer ${token}`},
         });
         return next.handle(authorizedRequest);
+      }),
+      catchError(err => {
+        console.error('AuthInterceptor: Error in interceptor chain:', err);
+        return throwError(() => err);
       }),
       catchError(error => {
         // If the error is NOT an HttpErrorResponse, it's a token refresh failure
