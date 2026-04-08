@@ -18,12 +18,13 @@ resource "random_id" "db_name_suffix" {
 
 resource "google_sql_database_instance" "default" {
   name             = "creative-studio-db-${random_id.db_name_suffix.hex}"
-  database_version = "POSTGRES_18" # Latest stable version
+  database_version = "POSTGRES_15" # Supported stable version
   region           = var.region
   project          = var.project_id
 
   settings {
-    tier = "db-f1-micro"
+    tier    = "db-f1-micro"
+    edition = "ENTERPRISE"
     
     # Enable IAM Authentication for better security (optional but recommended)
     database_flags {
@@ -32,7 +33,7 @@ resource "google_sql_database_instance" "default" {
     }
 
     ip_configuration {
-      ipv4_enabled                                  = true
+      ipv4_enabled                                  = false
       private_network                               = var.vpc_network_id
       enable_private_path_for_google_cloud_services = true
     }

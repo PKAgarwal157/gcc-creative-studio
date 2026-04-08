@@ -160,7 +160,7 @@ module "frontend_service" {
   gcp_project_id       = var.gcp_project_id
   gcp_region            = var.gcp_region
   firebase_project_id  = google_firebase_project.default.project
-  service_name         = var.gcp_project_id
+  service_name         = "cstudio-fe"
   environment          = var.environment
   resource_prefix      = "cs-fe"
   github_branch_name   = var.github_branch_name
