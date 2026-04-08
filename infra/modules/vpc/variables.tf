@@ -12,15 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-output "connection_name" {
-  value = google_sql_database_instance.default.connection_name
+variable "project_id" {
+  type        = string
+  description = "The GCP project ID"
 }
-output "db_name" {
-  value = google_sql_database.default.name
+
+variable "region" {
+  type        = string
+  description = "The GCP region"
 }
-output "db_user" {
-  value = google_sql_user.default.name
+
+variable "network_name" {
+  type        = string
+  default     = "creative-studio-vpc"
+  description = "The name of the VPC network"
 }
-output "private_ip" {
-  value = google_sql_database_instance.default.private_ip_address
+
+variable "subnet_name" {
+  type        = string
+  default     = "cs-subnet"
+  description = "The name of the subnet"
+}
+
+variable "subnet_cidr" {
+  type        = string
+  default     = "10.0.0.0/24"
+  description = "The IP range for the subnet"
 }

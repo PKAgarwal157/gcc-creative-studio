@@ -37,15 +37,27 @@ resource "google_cloud_run_v2_service" "this" {
   custom_audiences = var.custom_audiences
   deletion_protection = false
 
-  template {
-    service_account = google_service_account.run_sa.email
-    volumes {
-      name = "cloudsql"
-      cloud_sql_instance {
-        instances = [var.cloud_sql_connection_name]
+    template {
+      service_account = google_service_account.run_sa.email
+      volumes {
+        name = "cloudsql"
+        cloud_sql_instance {
+          instances = [var.cloud_sql_connection_name]
+        }
       }
-    }
-    containers {
+      
+      dynamic "vpc_access" {
+        for_each = var.vpc_network_name != "" ? [1] : []
+        content {
+          network_interfaces {
+            network    = var.vpc_network_name
+            subnetwork = var.vpc_subnetwork_name
+          }
+          egress = "PRIVATE_RANGES_ONLY"
+        }
+      }
+
+      containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello:latest"
       resources {
         limits = {
@@ -60,7 +72,11 @@ resource "google_cloud_run_v2_service" "this" {
       }
       env {
         name = "DB_HOST"
-        value = "/cloudsql/${var.cloud_sql_connection_name}"
+        value = var.db_private_ip != "" ? var.db_private_ip : "/cloudsql/${var.cloud_sql_connection_name}"
+      }
+      env {
+        name = "USE_CLOUD_SQL_AUTH_PROXY"
+        value = var.db_private_ip != "" ? "true" : "false"
       }
       env {
         name = "DB_NAME"

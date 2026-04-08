@@ -78,6 +78,13 @@ resource "google_cloudbuildv2_repository" "source_repo" {
   remote_uri        = "https://github.com/${var.github_repo_owner}/${var.github_repo_name}.git"
 }
 
+# --- VPC Network ---
+module "vpc" {
+  source      = "../vpc"
+  project_id  = var.gcp_project_id
+  region      = var.gcp_region
+}
+
 # Postgres Database related
 # 1. Read the Secret (Created by Bootstrap script)
 data "google_secret_manager_secret_version" "db_password" {
@@ -94,6 +101,10 @@ module "postgresql" {
   
   # Pass the ACTUAL value to create the user
   db_password = data.google_secret_manager_secret_version.db_password.secret_data
+  
+  vpc_network_id = module.vpc.network_id
+  
+  depends_on = [module.vpc.peering_connection]
 }
 
 # --- Service Module Calls ---
@@ -129,9 +140,12 @@ module "backend_service" {
   cloud_sql_connection_name = module.postgresql.connection_name
   db_name                   = module.postgresql.db_name
   db_user                   = module.postgresql.db_user
-  
-  # Pass the Secret ID reference (NOT the value) for Cloud Run
   db_secret_id              = "creative-studio-db-password"
+  
+  # VPC
+  vpc_network_name     = module.vpc.network_name
+  vpc_subnetwork_name  = module.vpc.subnet_name
+  db_private_ip        = module.postgresql.private_ip
 }
 
 resource "google_firebase_project" "default" {

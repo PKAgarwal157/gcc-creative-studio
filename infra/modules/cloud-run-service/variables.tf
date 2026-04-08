@@ -129,3 +129,21 @@ variable "db_secret_id" {
 }
 variable "db_name" { type = string }
 variable "db_user" { type = string }
+
+variable "vpc_network_name" {
+  type        = string
+  description = "The name of the VPC network for Direct VPC Egress"
+  default     = ""
+}
+
+variable "vpc_subnetwork_name" {
+  type        = string
+  description = "The name of the subnet for Direct VPC Egress"
+  default     = ""
+}
+
+variable "db_private_ip" {
+  type        = string
+  description = "The private IP of the Cloud SQL instance"
+  default     = ""
+}

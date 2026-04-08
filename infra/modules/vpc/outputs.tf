@@ -12,15 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-output "connection_name" {
-  value = google_sql_database_instance.default.connection_name
+output "network_id" {
+  value       = google_compute_network.vpc.id
+  description = "The ID of the VPC network"
 }
-output "db_name" {
-  value = google_sql_database.default.name
+
+output "network_name" {
+  value       = google_compute_network.vpc.name
+  description = "The name of the VPC network"
 }
-output "db_user" {
-  value = google_sql_user.default.name
+
+output "subnet_name" {
+  value       = google_compute_subnetwork.subnet.name
+  description = "The name of the subnet"
 }
-output "private_ip" {
-  value = google_sql_database_instance.default.private_ip_address
+
+output "peering_connection" {
+  value       = google_service_networking_connection.private_vpc_connection
+  description = "The peering connection resource (used for dependencies)"
 }
