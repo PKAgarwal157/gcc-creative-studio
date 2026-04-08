@@ -111,6 +111,39 @@ For the deployment you can use CloudShell which already has all of the necessary
 * `terraform` (version 1.13.0 or newer) 
 
 
+## Microsoft Entra ID & Firebase Configuration
+
+To enable login via Microsoft and automate CI/CD, follow these additional steps in your environment:
+
+### 1. Microsoft Entra ID Setup
+1. **Create an Application**: Register a new application in the Microsoft Entra admin center.
+2. **Configure Redirect URIs**: Add the following URLs in the "Redirect URI" section:
+   - `https://<project-id>/__/auth/handler`
+   - `https://<project-id>.firebaseapp.com/__/auth/handler`
+   
+   > [!IMPORTANT]
+   > Replace `<project-id>` with your actual Firebase project ID.
+
+3. **Supported Account Types**:
+   - Select **"Multiple Entra ID tenants"**.
+   - Select **"Allow all tenants"**.
+4. **Generate Credentials**:
+   - Create a new client secret.
+   - **Note down** the **Secret Value** and the **Client ID**. You will need these for Firebase configuration.
+
+### 2. Firebase Configuration
+1. Navigate to your Firebase project settings.
+2. Input the **Client ID** and **Client Secret** obtained from the previous step to configure the application.
+
+### 3. Google OAuth Configuration
+In the Google Cloud Console, ensure the following URLs are added to the **Authorized JavaScript origins** for the OAuth 2.0 Client ID:
+- `https://<project-id>.firebaseapp.com`
+- `https://<project-id>.web.app`
+
+### 4. CI/CD Automation
+- To automate CI/CD builds, a team member with appropriate GitHub access must **fork** the repository. This allows the configuration of CI/CD pipelines in your environment.
+
+
 ## Code Styling & Commit Guidelines
 
 To maintain code quality and consistency:
