@@ -86,6 +86,13 @@ data "google_secret_manager_secret_version" "db_password" {
   version = "latest"
 }
 
+module "network" {
+  source      = "../network"
+  project_id  = var.gcp_project_id
+  region      = var.gcp_region
+  environment = var.environment
+}
+
 # 2. Call PostgreSQL Module
 module "postgresql" {
   source      = "../postgresql"
@@ -94,6 +101,10 @@ module "postgresql" {
   
   # Pass the ACTUAL value to create the user
   db_password = data.google_secret_manager_secret_version.db_password.secret_data
+  
+  vpc_network_id = module.network.network_id
+
+  depends_on = [module.network]
 }
 
 # --- Service Module Calls ---
@@ -132,6 +143,9 @@ module "backend_service" {
   
   # Pass the Secret ID reference (NOT the value) for Cloud Run
   db_secret_id              = "creative-studio-db-password"
+
+  vpc_network_id    = module.network.network_id
+  vpc_subnetwork_id = module.network.subnetwork_id
 }
 
 resource "google_firebase_project" "default" {
@@ -194,4 +208,14 @@ resource "google_cloud_run_v2_service_iam_member" "fe_trigger_can_view_backend" 
   location = module.backend_service.location
   role     = "roles/run.viewer"
   member   = "serviceAccount:${module.frontend_service.trigger_sa_email}"
+}
+
+# Grant the default Cloud Build service account permission to view the backend service
+resource "google_cloud_run_v2_service_iam_member" "default_cb_can_view_backend" {
+  provider = google-beta
+  project  = var.gcp_project_id
+  name     = module.backend_service.service_name
+  location = module.backend_service.location
+  role     = "roles/run.viewer"
+  member   = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
 }

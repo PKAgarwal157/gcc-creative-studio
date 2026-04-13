@@ -1,9 +1,9 @@
 gcp_project_id = "YOUR_GCP_PROJECT_ID"
-gcp_region     = "us-central1"
+gcp_region     = "europe-north1"
 environment    = "development"
 
 # --- Service Names ---
-backend_service_name  = "cstudio-backend-dev"
+backend_service_name  = "cstudio-be"
 frontend_service_name = "cstudio-frontend-dev" # This is the Cloud Run service name
 firebase_site_id      = "YOUR_FIREBASE_SITE_ID" # (Optional) Custom Firebase Hosting Site ID, defaults to the gcp_project_id
 
@@ -71,4 +71,5 @@ apis_to_enable = [
   "firestore.googleapis.com",
   "texttospeech.googleapis.com",
   "workflows.googleapis.com",
+  "servicenetworking.googleapis.com",
 ]

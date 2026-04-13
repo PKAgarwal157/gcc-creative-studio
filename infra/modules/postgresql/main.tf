@@ -23,7 +23,8 @@ resource "google_sql_database_instance" "default" {
   project          = var.project_id
 
   settings {
-    tier = "db-perf-optimized-N-2"
+    tier    = "db-g1-small"
+    edition = "ENTERPRISE"
     
     # Enable IAM Authentication for better security (optional but recommended)
     database_flags {
@@ -32,7 +33,8 @@ resource "google_sql_database_instance" "default" {
     }
 
     ip_configuration {
-      ipv4_enabled = true # Easy connectivity from Cloud Run without VPC peering complexity
+      ipv4_enabled    = false
+      private_network = var.vpc_network_id
     }
   }
   
