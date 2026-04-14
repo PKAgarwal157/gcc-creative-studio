@@ -24,6 +24,7 @@ resource "google_compute_subnetwork" "subnet" {
   region        = var.region
   network       = google_compute_network.vpc.id
   project       = var.project_id
+  private_ip_google_access = true
 }
 
 resource "google_compute_global_address" "private_ip_address" {
