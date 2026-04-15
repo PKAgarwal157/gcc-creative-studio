@@ -384,8 +384,8 @@ setup_repo() {
     export REPO_ROOT
     success "Project root successfully set to: $REPO_ROOT"
 
-    GITHUB_REPO_OWNER=$(git remote get-url origin | sed -n 's/.*github.com\/\(.*\)\/.*/\1/p')
-    GITHUB_REPO_NAME=$REPO_CLONE_DIR
+    GITHUB_REPO_OWNER="dna"
+    GITHUB_REPO_NAME="b2c-gcc-creative-studio"
 
     info "Detected GitHub owner: $GITHUB_REPO_OWNER"
     info "Detected GitHub repo name: $GITHUB_REPO_NAME"
