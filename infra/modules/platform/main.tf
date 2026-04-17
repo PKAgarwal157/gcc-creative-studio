@@ -126,7 +126,7 @@
     runtime_secrets = var.backend_runtime_secrets
     custom_audiences      = var.backend_custom_audiences
     scaling_min_instances = 1
-    source_repository_id = google_cloudbuildv2_repository.source_repo.id
+    # source_repository_id = google_cloudbuildv2_repository.source_repo.id
     cpu = var.be_cpu
     memory = var.be_memory
     #build_substitutions   = merge(var.be_build_substitutions,
@@ -156,7 +156,7 @@
   module "frontend_service" {
     source = "../firebase-hosting-service"
 
-    source_repository_id = google_cloudbuildv2_repository.source_repo.id
+    # source_repository_id = google_cloudbuildv2_repository.source_repo.id
     gcp_project_id       = var.gcp_project_id
     gcp_region            = var.gcp_region
     firebase_project_id  = google_firebase_project.default.project
