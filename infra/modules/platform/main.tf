@@ -186,7 +186,7 @@
 
     gcp_project_id    = var.gcp_project_id
     secret_names      = var.frontend_secrets
-    accessor_sa_email = module.frontend_service.trigger_sa_email
+    # accessor_sa_email = module.frontend_service.trigger_sa_email
   }
 
   module "backend_secrets" {
@@ -194,7 +194,7 @@
 
     gcp_project_id    = var.gcp_project_id
     secret_names      = var.backend_secrets
-    accessor_sa_email = module.backend_service.trigger_sa_email
+    accessor_sa_email = module.backend_service.service_account_email
   }
 
   # --- Cross-Module Permissions ---
