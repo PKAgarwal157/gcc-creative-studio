@@ -730,7 +730,7 @@ seed_data() {
     fi
 
     # Create venv if it doesn't exist
-    uv venv "$VENV_DIR" --python python3
+    uv venv "$VENV_DIR" --python python3 --clear
 
     # Install dependencies from pyproject.toml into the virtual environment
     info "Installing Python project and its dependencies from 'backend/pyproject.toml'..."
