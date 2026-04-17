@@ -47,7 +47,7 @@ AUTO_OAUTH_CLIENT_ID=""
 AUTO_FIREBASE_SITE_ID=""           # The discovered Firebase Hosting Site ID
 
 STATE_FILE=""
-REPO_ROOT=""
+REPO_ROOT=$(pwd)
 
 # --- Color Definitions (High Contrast) ---
 C_RESET='\033[0m'
@@ -323,73 +323,73 @@ setup_project() {
     success "Project '$GCP_PROJECT_ID' is configured."
 }
 
-setup_repo() {
-    step 4 "Configuring Git Repository"
+# setup_repo() {
+#     step 4 "Configuring Git Repository"
 
-    # Since the script is run via curl, it never starts inside a repo. We must clone it.
-    warn "Please fork the main repository first: ${UPSTREAM_REPO_URL}/fork"
-    while true; do
-        prompt "What is the git URL of YOUR forked repository? (e.g., https://github.com/user/repo.git)"
-        read -p "   Git URL: " GITHUB_REPO_URL < /dev/tty
-        if [ -z "$GITHUB_REPO_URL" ]; then warn "Repository URL cannot be empty."; continue; fi
-        info "Validating repository URL..."
-        if git ls-remote --exit-code -h "$GITHUB_REPO_URL" > /dev/null 2>&1; then
-            success "Repository found."; break
-        else warn "Repository not found at that URL. Please check for typos and try again."; fi
-    done
+#     # Since the script is run via curl, it never starts inside a repo. We must clone it.
+#     warn "Please fork the main repository first: ${UPSTREAM_REPO_URL}/fork"
+#     while true; do
+#         prompt "What is the git URL of YOUR forked repository? (e.g., https://github.com/user/repo.git)"
+#         read -p "   Git URL: " GITHUB_REPO_URL < /dev/tty
+#         if [ -z "$GITHUB_REPO_URL" ]; then warn "Repository URL cannot be empty."; continue; fi
+#         info "Validating repository URL..."
+#         if git ls-remote --exit-code -h "$GITHUB_REPO_URL" > /dev/null 2>&1; then
+#             success "Repository found."; break
+#         else warn "Repository not found at that URL. Please check for typos and try again."; fi
+#     done
 
-    # --- Ask for Branch ---
-    prompt "Which git branch would you like to use? (default: main)"
-    read -p "   Branch Name: " SELECTED_BRANCH < /dev/tty
-    SELECTED_BRANCH=${SELECTED_BRANCH:-main}
-    DEFAULT_BRANCH_NAME="$SELECTED_BRANCH"
+#     # --- Ask for Branch ---
+#     prompt "Which git branch would you like to use? (default: main)"
+#     read -p "   Branch Name: " SELECTED_BRANCH < /dev/tty
+#     SELECTED_BRANCH=${SELECTED_BRANCH:-main}
+#     DEFAULT_BRANCH_NAME="$SELECTED_BRANCH"
 
-    local REPO_CLONE_DIR=$(basename "$GITHUB_REPO_URL" .git)
+#     local REPO_CLONE_DIR=$(basename "$GITHUB_REPO_URL" .git)
 
-    if [[ -d "$REPO_CLONE_DIR" ]]; then
-        warn "Directory '$REPO_CLONE_DIR' already exists."; prompt "Do you want to use this existing directory? (y/n)"; read -r REPLY < /dev/tty
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then fail "Please remove the directory or run the script from a different location."; fi
-    else
-        info "Performing a sparse checkout of '$REPO_CLONE_DIR' (Branch: $SELECTED_BRANCH)..."
+#     if [[ -d "$REPO_CLONE_DIR" ]]; then
+#         warn "Directory '$REPO_CLONE_DIR' already exists."; prompt "Do you want to use this existing directory? (y/n)"; read -r REPLY < /dev/tty
+#         if [[ ! $REPLY =~ ^[Yy]$ ]]; then fail "Please remove the directory or run the script from a different location."; fi
+#     else
+#         info "Performing a sparse checkout of '$REPO_CLONE_DIR' (Branch: $SELECTED_BRANCH)..."
         
-        # 1. Clone with -b branch_name
-        git clone --filter=blob:none --no-checkout --depth 1 --sparse -b "$SELECTED_BRANCH" "$GITHUB_REPO_URL" "$REPO_CLONE_DIR"
+#         # 1. Clone with -b branch_name
+#         git clone --filter=blob:none --no-checkout --depth 1 --sparse -b "$SELECTED_BRANCH" "$GITHUB_REPO_URL" "$REPO_CLONE_DIR"
         
-        cd "$REPO_CLONE_DIR"
+#         cd "$REPO_CLONE_DIR"
         
-        # 2. Sparse checkout for ROOT folders only
-        git sparse-checkout set "infra" "backend" "frontend" "bootstrap.sh"
+#         # 2. Sparse checkout for ROOT folders only
+#         git sparse-checkout set "infra" "backend" "frontend" "bootstrap.sh"
         
-        git checkout
-        cd ..
+#         git checkout
+#         cd ..
 
-        success "Repository cloned successfully."
-    fi
+#         success "Repository cloned successfully."
+#     fi
 
-    # --- Project Path Verification ---
-    info "Verifying project structure..."
+#     # --- Project Path Verification ---
+#     info "Verifying project structure..."
 
-    # Check if the project is at the top level
-    if [[ -d "$REPO_CLONE_DIR/infra" && -f "$REPO_CLONE_DIR/bootstrap.sh" ]]; then
-        info "Detected project structure."
-    else
-        warn "Directory listing of clone:"
-        ls -F "$REPO_CLONE_DIR/"
-        fail "Could not find a valid project structure. The script requires an 'infra' directory and 'bootstrap.sh' file at the root."
-    fi
+#     # Check if the project is at the top level
+#     if [[ -d "$REPO_CLONE_DIR/infra" && -f "$REPO_CLONE_DIR/bootstrap.sh" ]]; then
+#         info "Detected project structure."
+#     else
+#         warn "Directory listing of clone:"
+#         ls -F "$REPO_CLONE_DIR/"
+#         fail "Could not find a valid project structure. The script requires an 'infra' directory and 'bootstrap.sh' file at the root."
+#     fi
 
-    cd "$REPO_CLONE_DIR"
+#     cd "$REPO_CLONE_DIR"
 
-    REPO_ROOT=$(pwd)
-    export REPO_ROOT
-    success "Project root successfully set to: $REPO_ROOT"
+#     REPO_ROOT=$(pwd)
+#     export REPO_ROOT
+#     success "Project root successfully set to: $REPO_ROOT"
 
-    GITHUB_REPO_OWNER="dna"
-    GITHUB_REPO_NAME="b2c-gcc-creative-studio"
+#     GITHUB_REPO_OWNER="dna"
+#     GITHUB_REPO_NAME="b2c-gcc-creative-studio"
 
-    info "Detected GitHub owner: $GITHUB_REPO_OWNER"
-    info "Detected GitHub repo name: $GITHUB_REPO_NAME"
-}
+#     info "Detected GitHub owner: $GITHUB_REPO_OWNER"
+#     info "Detected GitHub repo name: $GITHUB_REPO_NAME"
+# }
 
 configure_environment() {
     step 5 "Configuring Terraform Environment";
@@ -450,21 +450,21 @@ configure_environment() {
 handle_manual_steps() {
     step 6 "Manual Steps Required"; cd "$REPO_ROOT/infra"; TFVARS_FILE_PATH="$ENV_DIR/$ENV_NAME.tfvars"
     info "Enabling required Google Cloud APIs..."; gcloud services enable cloudbuild.googleapis.com secretmanager.googleapis.com firebase.googleapis.com iap.googleapis.com identitytoolkit.googleapis.com texttospeech.googleapis.com workflows.googleapis.com --project="$GCP_PROJECT_ID"
-    if [ -z "$GITHUB_CONN_NAME" ]; then
-        prompt "\nDo you already have a Cloud Build Host Connection for GitHub in this project? (y/n)"; read -r REPLY < /dev/tty
-        if [[ $REPLY =~ ^[Yy]$ ]]; then prompt "Please enter the existing connection name:"; read -p "   Connection Name: " GITHUB_CONN_NAME < /dev/tty
-        else
-            warn "You will now be guided to create a new GitHub connection."; info "Please perform the following manual steps:"
-            echo "1. Open this URL in your browser:"; echo -e "   ${C_YELLOW}https://console.cloud.google.com/cloud-build/connections/create?project=${GCP_PROJECT_ID}${C_RESET}"
-            echo "2. Select 'GitHub (Cloud Build GitHub App)' and click 'CONTINUE'."
-            echo "3. Follow the prompts to authorize the app on your GitHub account."; 
-            echo "4. Grant access to your forked repository: '${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}'."
-            echo "5. After creating the connection, copy its name (e.g., 'gh-yourname-con')."
-            prompt "Paste the new Cloud Build Connection Name here:"; read -p "   Connection Name: " GITHUB_CONN_NAME < /dev/tty
-        fi
-        sed -i.bak "s|^[#[:space:]]*github_conn_name[[:space:]]*=.*|github_conn_name = \"$GITHUB_CONN_NAME\"|g" "$TFVARS_FILE_PATH"
-        write_state "GITHUB_CONN_NAME" "$GITHUB_CONN_NAME"
-    fi
+    # if [ -z "$GITHUB_CONN_NAME" ]; then
+    #     prompt "\nDo you already have a Cloud Build Host Connection for GitHub in this project? (y/n)"; read -r REPLY < /dev/tty
+    #     if [[ $REPLY =~ ^[Yy]$ ]]; then prompt "Please enter the existing connection name:"; read -p "   Connection Name: " GITHUB_CONN_NAME < /dev/tty
+    #     else
+    #         warn "You will now be guided to create a new GitHub connection."; info "Please perform the following manual steps:"
+    #         echo "1. Open this URL in your browser:"; echo -e "   ${C_YELLOW}https://console.cloud.google.com/cloud-build/connections/create?project=${GCP_PROJECT_ID}${C_RESET}"
+    #         echo "2. Select 'GitHub (Cloud Build GitHub App)' and click 'CONTINUE'."
+    #         echo "3. Follow the prompts to authorize the app on your GitHub account."; 
+    #         echo "4. Grant access to your forked repository: '${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}'."
+    #         echo "5. After creating the connection, copy its name (e.g., 'gh-yourname-con')."
+    #         prompt "Paste the new Cloud Build Connection Name here:"; read -p "   Connection Name: " GITHUB_CONN_NAME < /dev/tty
+    #     fi
+    #     sed -i.bak "s|^[#[:space:]]*github_conn_name[[:space:]]*=.*|github_conn_name = \"$GITHUB_CONN_NAME\"|g" "$TFVARS_FILE_PATH"
+    #     write_state "GITHUB_CONN_NAME" "$GITHUB_CONN_NAME"
+    # fi
     warn "\nTerraform cannot accept legal terms on your behalf."; info "Please perform this one-time manual step for Firebase:"
     echo "1. Open this URL in your browser:"; echo -e "   ${C_YELLOW}https://console.firebase.google.com/?project=${GCP_PROJECT_ID}${C_RESET}"
     echo "2. You should be prompted to 'Add Firebase' to your existing project."; echo "3. Follow the prompts and accept the terms."
@@ -756,15 +756,15 @@ seed_data() {
 
 
 
-trigger_builds() {
-    step 14 "Triggering Initial Builds"; cd "$REPO_ROOT"
-    prompt "Would you like to trigger the initial builds for the frontend and backend now? (y/n)"; read -r REPLY < /dev/tty
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then info "You can trigger the builds manually later by pushing a commit or via the Cloud Build UI."; return; fi
-    info "Triggering backend build..."; gcloud builds triggers run "${BE_SERVICE_NAME}-trigger" --branch="$GITHUB_BRANCH" --project="$GCP_PROJECT_ID" --region="europe-north1"
-    info "Triggering frontend build..."; gcloud builds triggers run "$GCP_PROJECT_ID-trigger" --branch="$GITHUB_BRANCH" --project $GCP_PROJECT_ID --region="europe-north1"
+# trigger_builds() {
+#     step 14 "Triggering Initial Builds"; cd "$REPO_ROOT"
+#     prompt "Would you like to trigger the initial builds for the frontend and backend now? (y/n)"; read -r REPLY < /dev/tty
+#     if [[ ! $REPLY =~ ^[Yy]$ ]]; then info "You can trigger the builds manually later by pushing a commit or via the Cloud Build UI."; return; fi
+#     info "Triggering backend build..."; gcloud builds triggers run "${BE_SERVICE_NAME}-trigger" --branch="$GITHUB_BRANCH" --project="$GCP_PROJECT_ID" --region="europe-north1"
+#     info "Triggering frontend build..."; gcloud builds triggers run "$GCP_PROJECT_ID-trigger" --branch="$GITHUB_BRANCH" --project $GCP_PROJECT_ID --region="europe-north1"
 
-    success "Builds have been triggered."; info "You can monitor their progress in the Cloud Build console:"; echo -e "   ${C_YELLOW}https://console.cloud.google.com/cloud-build/builds?project=${GCP_PROJECT_ID}${C_RESET}"
-}
+#     success "Builds have been triggered."; info "You can monitor their progress in the Cloud Build console:"; echo -e "   ${C_YELLOW}https://console.cloud.google.com/cloud-build/builds?project=${GCP_PROJECT_ID}${C_RESET}"
+# }
 
 # --- Main Execution ---
 main() {
@@ -784,7 +784,8 @@ main() {
     declare -a steps_to_run=(
         "check_prerequisites"
         "check_and_install_terraform"
-        "setup_project" "setup_repo"
+        "setup_project"
+        # "setup_repo"
         "configure_environment"
         "handle_manual_steps"
         "setup_firebase_app"
@@ -794,7 +795,7 @@ main() {
         "update_oauth_client"
         "update_secrets"
         "seed_data"
-        "trigger_builds" 
+        # "trigger_builds" 
     )
     for i in "${!steps_to_run[@]}"; do
         step_num=$((i + 1))
