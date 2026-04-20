@@ -34,7 +34,7 @@ resource "google_artifact_registry_repository" "repo" {
 resource "google_cloud_run_v2_service" "this" {
   name             = var.service_name
   location         = var.gcp_region
-  ingress          = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  ingress          = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
   custom_audiences = var.custom_audiences
   deletion_protection = false
 
