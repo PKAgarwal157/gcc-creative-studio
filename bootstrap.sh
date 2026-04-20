@@ -583,7 +583,8 @@ setup_db_secrets() {
         # We use printf to avoid trailing newlines
         printf "%s" "$DB_PASSWORD" | gcloud secrets create "$SECRET_NAME" \
             --data-file=- \
-            --replication-policy="automatic" \
+            --replication-policy="user-managed" \
+            --replicas="europe-north1" \
             --project="$GCP_PROJECT_ID" \
             --quiet
 
