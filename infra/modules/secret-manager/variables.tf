@@ -27,3 +27,8 @@ variable "accessor_sa_email" {
   description = "The email of the service account that will be granted accessor permission."
   default     = ""
 }
+
+variable "gcp_region" {
+  type        = string
+  description = "The GCP region for user-managed replication of secrets."
+}
