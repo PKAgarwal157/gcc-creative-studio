@@ -584,7 +584,7 @@ setup_db_secrets() {
         printf "%s" "$DB_PASSWORD" | gcloud secrets create "$SECRET_NAME" \
             --data-file=- \
             --replication-policy="user-managed" \
-            --replicas="europe-north1" \
+            --locations="europe-north1" \
             --project="$GCP_PROJECT_ID" \
             --quiet
 
