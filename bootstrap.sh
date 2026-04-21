@@ -156,8 +156,8 @@ start_sql_proxy() {
         chmod +x cloud-sql-proxy
     fi
 
-    # 3. Start Proxy in Background (Port 5432)
-    ./cloud-sql-proxy --address 0.0.0.0 --port 5432 "$DB_INSTANCE_NAME" > /dev/null 2>&1 &
+    # 3. Start Proxy in Background (Port 5432) with Private IP
+    ./cloud-sql-proxy --address 0.0.0.0 --port 5432 --private-ip "$DB_INSTANCE_NAME" > /dev/null 2>&1 &
     PROXY_PID=$!
     export PROXY_PID
     
