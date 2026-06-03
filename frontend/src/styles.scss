@@ -65,6 +65,7 @@ $creative-studio-theme: mat.define-theme(
   --gem-sys-color--brand-transition-blue-1:#346BF1;
   --gem-sys-color--brand-transition-blue-2:#4FA0FF;
   --Greeting-gradient:linear-gradient(77deg, var(--gem-sys-color--brand-blue) 6.99%, var(--gem-sys-color--brand-transition-blue-1) 45.46%, var(--gem-sys-color--brand-transition-blue-2) 88.2%);
+  --z-index-notification: 99999;
 
 }
 
@@ -487,4 +488,11 @@ app-workspace-switcher .workspace-name {
 
 // 4K Displays (Ultra HD) (Projectors or Higher Resolution Screens, 2160px and up)
 @media screen and (min-width: 2160px) {
+}
+// Custom Snackbar Styles
+.gallery-hint-snackbar {
+  .mat-mdc-snack-bar-action {
+    color: #004a99 !important; // Darker blue for better visibility on light snackbar background
+    font-weight: 600;
+  }
 }
