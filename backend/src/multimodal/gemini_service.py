@@ -66,6 +66,11 @@ class ResponseMimeTypeEnum(str, Enum):
     TEXT = "text/plain"
 
 
+class BrandComplianceReport(BaseModel):
+    is_compliant: bool
+    detailed_reason: str
+
+
 class GeminiService:
     """A dedicated service for interactions with Google's Gemini models.
     Handles client initialization, prompt rewriting, and error handling.
@@ -500,3 +505,58 @@ class GeminiService:
                 "Failed to aggregate brand info summaries with Gemini: %s", e
             )
             return None
+
+    def check_brand_compliance(
+        self, pdf_gcs_uri: str, asset_gcs_uri: str, mime_type: str
+    ) -> dict[str, Any]:
+        """Uses a multimodal model to analyze a generated asset against brand guidelines.
+
+        Args:
+            pdf_gcs_uri: GCS URI of the brand guidelines PDF.
+            asset_gcs_uri: GCS URI of the target image or video.
+            mime_type: MIME type of the target asset.
+
+        Returns:
+            A dictionary representing the compliance report.
+        """
+        logger.info(
+            "Starting brand compliance check for asset: %s against PDF: %s",
+            asset_gcs_uri,
+            pdf_gcs_uri,
+        )
+
+        pdf_part = types.Part.from_uri(
+            file_uri=pdf_gcs_uri,
+            mime_type="application/pdf",
+        )
+        asset_part = types.Part.from_uri(
+            file_uri=asset_gcs_uri,
+            mime_type=mime_type,
+        )
+
+        prompt = """
+        You are a Brand Compliance Agent.
+        Analyze the provided asset (image or video) and evaluate whether it complies with the rules, visual style, and tone of voice defined in the brand guidelines PDF.
+
+        Return a structured JSON object with:
+        1. "is_compliant": A boolean indicating if the asset complies with the guidelines.
+        2. "detailed_reason": A detailed, markdown-formatted report explaining why the asset complies or listing the specific guidelines it violates and recommending corrections.
+        """
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.cfg.GEMINI_MODEL_ID,
+                contents=[pdf_part, asset_part, prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=BrandComplianceReport,
+                ),
+            )
+            return json.loads(response.text or "{}")
+        except Exception as e:
+            logger.error("Failed to check brand compliance: %s", e)
+            return {
+                "is_compliant": False,
+                "detailed_reason": f"Compliance check failed: {str(e)}",
+            }
+

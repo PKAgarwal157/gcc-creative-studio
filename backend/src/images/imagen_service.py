@@ -33,6 +33,9 @@ from src.auth.iam_signer_credentials_service import IamSignerCredentials
 from src.brand_guidelines.repository.brand_guideline_repository import (
     BrandGuidelineRepository,
 )
+from src.brand_guidelines.dto.brand_guideline_search_dto import (
+    BrandGuidelineSearchDto,
+)
 from src.common.base_dto import (
     AspectRatioEnum,
     GenerationModelEnum,
@@ -1259,6 +1262,7 @@ class ImagenService:
         gemini_service: GeminiService = Depends(),
         gcs_service: GcsService = Depends(),
         source_asset_repo: SourceAssetRepository = Depends(),
+        brand_guideline_repo: BrandGuidelineRepository = Depends(),
     ):
         """Initializes the service with its dependencies."""
         self.iam_signer_credentials = iam_signer_credentials
@@ -1266,6 +1270,7 @@ class ImagenService:
         self.gemini_service = gemini_service
         self.gcs_service = gcs_service
         self.source_asset_repo = source_asset_repo
+        self.brand_guideline_repo = brand_guideline_repo
         self.cfg = config_service
 
     async def start_upload_upscale_job(
@@ -1671,3 +1676,82 @@ class ImagenService:
         except Exception as e:
             logger.error("Image upscaling generation API call failed: %s", e)
             raise
+
+    async def check_image_compliance(
+        self,
+        media_item_id: int,
+        workspace_id: int,
+        media_index: int = 0,
+    ) -> MediaItemModel:
+        """Checks brand compliance of a generated asset using the workspace brand guidelines."""
+        # 1. Fetch the media item
+        media_item = await self.media_repo.get_by_id(media_item_id)
+        if not media_item or media_item.workspace_id != workspace_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Media item not found in the specified workspace.",
+            )
+
+        # 2. Get the asset GCS URI and mime type
+        if not media_item.gcs_uris or len(media_item.gcs_uris) <= media_index:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No media URI found at index {media_index} for this media item.",
+            )
+        asset_gcs_uri = media_item.gcs_uris[media_index]
+        mime_type = media_item.mime_type
+
+        # 3. Fetch workspace brand guidelines
+        search_dto = BrandGuidelineSearchDto(workspace_id=workspace_id, limit=1)
+        response = await self.brand_guideline_repo.query(
+            search_dto, workspace_id=workspace_id
+        )
+
+        brand_guideline = None
+        if response and response.data:
+            brand_guideline = response.data[0]
+        else:
+            # Fall back to global brand guideline (workspace_id = None)
+            global_search = BrandGuidelineSearchDto(limit=1)
+            global_response = await self.brand_guideline_repo.query(
+                global_search, workspace_id=None
+            )
+            if global_response and global_response.data:
+                brand_guideline = global_response.data[0]
+
+        if not brand_guideline or not brand_guideline.source_pdf_gcs_uris:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No brand guidelines PDF found for this workspace or global default.",
+            )
+
+        pdf_gcs_uri = brand_guideline.source_pdf_gcs_uris[0]
+
+        # 4. Invoke Gemini compliance check
+        compliance_result = self.gemini_service.check_brand_compliance(
+            pdf_gcs_uri=pdf_gcs_uri,
+            asset_gcs_uri=asset_gcs_uri,
+            mime_type=mime_type.value if hasattr(mime_type, 'value') else mime_type,
+        )
+
+        # 5. Update media_item raw_data JSONB field
+        raw_data = media_item.raw_data or {}
+        new_raw_data = dict(raw_data)
+        if "brand_compliance" not in new_raw_data:
+            new_raw_data["brand_compliance"] = {}
+
+        new_raw_data["brand_compliance"][str(media_index)] = compliance_result
+        media_item.raw_data = new_raw_data
+
+        # 6. Commit changes to DB
+        await self.media_repo.update(media_item_id, {"raw_data": new_raw_data})
+
+        # Return updated model
+        updated_item = await self.media_repo.get_by_id(media_item_id)
+        if not updated_item:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to retrieve updated media item.",
+            )
+        return updated_item
+

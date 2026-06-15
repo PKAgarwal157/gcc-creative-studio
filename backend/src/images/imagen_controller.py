@@ -201,3 +201,35 @@ async def upscale_image(
             status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         ) from e
+
+
+@router.post("/{media_item_id}/check-compliance")
+async def check_brand_compliance(
+    media_item_id: int,
+    workspace_id: int,
+    media_index: int = 0,
+    service: ImagenService = Depends(),
+    current_user: UserModel = Depends(get_current_user),
+    workspace_auth: WorkspaceAuth = Depends(),
+) -> MediaItemResponse:
+    try:
+        # Check workspace membership/ownership permissions
+        await workspace_auth.authorize(
+            workspace_id=workspace_id,
+            user=current_user,
+        )
+
+        # Execute compliance checks
+        return await service.check_image_compliance(
+            media_item_id=media_item_id,
+            workspace_id=workspace_id,
+            media_index=media_index,
+        )
+    except HTTPException as http_exception:
+        raise http_exception
+    except Exception as e:
+        raise HTTPException(
+            status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred during brand compliance check: {e}",
+        )
+
