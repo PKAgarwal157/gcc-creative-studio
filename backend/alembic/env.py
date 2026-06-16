@@ -126,6 +126,11 @@ async def run_migrations_online() -> None:
         configuration["sqlalchemy.url"] = "postgresql+asyncpg://"
         connect_args["async_creator"] = alembic_get_connection
 
+    import logging
+    logging.getLogger("alembic.runtime.env").info("Alembic resolved DB_HOST: %s", config_service.DB_HOST)
+    logging.getLogger("alembic.runtime.env").info("Alembic resolved USE_CLOUD_SQL_AUTH_PROXY: %r", config_service.USE_CLOUD_SQL_AUTH_PROXY)
+    logging.getLogger("alembic.runtime.env").info("Alembic resolved URL: %s", configuration.get("sqlalchemy.url"))
+
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
