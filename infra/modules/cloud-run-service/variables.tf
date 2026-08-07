@@ -129,7 +129,10 @@ variable "db_secret_id" {
 }
 variable "db_name" { type = string }
 variable "db_user" { type = string }
-variable "db_ip_type" { type = string, default = "PRIVATE" }
+variable "db_ip_type" {
+  type    = string
+  default = "PRIVATE"
+}
 
 variable "vpc_network_id" {
   description = "The ID of the VPC network"
