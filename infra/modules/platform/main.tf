@@ -143,7 +143,7 @@ module "backend_service" {
   db_secret_id              = "creative-studio-db-password"
 
   vpc_network_id    = module.network.network_id
-  vpc_subnetwork_id = var.gcp_region == "us-west1" ? module.network.subnet_us_west1_id : module.network.subnet_us_east4_id
+  vpc_subnetwork_id = var.gcp_region == "us-central1" ? module.network.subnet_us_central1_id : (var.gcp_region == "us-west1" ? module.network.subnet_us_west1_id : module.network.subnet_us_east4_id)
 }
 
 resource "google_firebase_project" "default" {

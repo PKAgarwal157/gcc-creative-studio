@@ -27,6 +27,10 @@ output "subnet_us_east4_id" {
   value       = google_compute_subnetwork.subnet_us_east4.id
 }
 
+output "subnet_us_central1_id" {
+  value = google_compute_subnetwork.subnet_us_central1.id
+}
+
 output "subnet_us_west1_id" {
   description = "The ID of the us-west1 subnetwork"
   value       = google_compute_subnetwork.subnet_us_west1.id
