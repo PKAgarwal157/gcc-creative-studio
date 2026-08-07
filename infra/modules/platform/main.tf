@@ -86,14 +86,23 @@ data "google_secret_manager_secret_version" "db_password" {
   version = "latest"
 }
 
+module "network" {
+  source      = "../network"
+  project_id  = var.gcp_project_id
+  environment = var.environment
+}
+
 # 2. Call PostgreSQL Module
 module "postgresql" {
   source      = "../postgresql"
   project_id  = var.gcp_project_id
-  region      = var.gcp_region
+  region      = "us-east4"
   
   # Pass the ACTUAL value to create the user
   db_password = data.google_secret_manager_secret_version.db_password.secret_data
+
+  vpc_network_id = module.network.network_id
+  depends_on     = [module.network]
 }
 
 # --- Service Module Calls ---
@@ -132,6 +141,9 @@ module "backend_service" {
   
   # Pass the Secret ID reference (NOT the value) for Cloud Run
   db_secret_id              = "creative-studio-db-password"
+
+  vpc_network_id    = module.network.network_id
+  vpc_subnetwork_id = var.gcp_region == "us-west1" ? module.network.subnet_us_west1_id : module.network.subnet_us_east4_id
 }
 
 resource "google_firebase_project" "default" {
