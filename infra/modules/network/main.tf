@@ -19,11 +19,11 @@ resource "google_compute_network" "vpc" {
 }
 
 resource "google_compute_subnetwork" "subnet" {
-  name          = "cs-subnet-${var.environment}"
-  ip_cidr_range = "10.0.0.0/24"
-  region        = var.region
-  network       = google_compute_network.vpc.id
-  project       = var.project_id
+  name                     = "cs-subnet-${var.environment}"
+  ip_cidr_range            = "10.0.0.0/24"
+  region                   = var.region
+  network                  = google_compute_network.vpc.id
+  project                  = var.project_id
   private_ip_google_access = true
 
   log_config {

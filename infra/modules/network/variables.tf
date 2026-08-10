@@ -23,6 +23,6 @@ variable "environment" {
 }
 
 variable "region" {
+  description = "GCP Region for regional subnet"
   type        = string
-  description = "The GCP Region."
 }

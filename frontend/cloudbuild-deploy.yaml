@@ -79,7 +79,7 @@ steps:
       - 'firebase'
       - 'deploy'
       - '--project=${PROJECT_ID}'
-      - '--only=hosting:${_FIREBASE_SITE_ID}'
+      - '--only=hosting'
       - '--non-interactive'
     waitFor: ['Build Angular App']
     dir: frontend

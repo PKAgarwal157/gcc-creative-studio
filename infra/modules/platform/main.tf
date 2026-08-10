@@ -174,6 +174,7 @@ module "frontend_service" {
     var.fe_build_substitutions,
     {
       # This block should ONLY contain non-secret, underscore-prefixed values
+      _REGION              = var.gcp_region
       _BACKEND_URL         = local.frontend_url # The frontend will redirect the api calls to the backend
       _FE_SERVICE_NAME     = var.frontend_service_name
       _BACKEND_SERVICE_ID  = var.backend_service_name
