@@ -44,6 +44,7 @@ class UserService:
             and email.lower() == config_service.ADMIN_USER_EMAIL.lower()
         )
 
+        existing_user = await self.user_repo.get_by_email(email)
         if existing_user:
             if is_admin_email:
                 existing_roles = [
