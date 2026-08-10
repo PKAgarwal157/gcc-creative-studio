@@ -21,3 +21,8 @@ variable "environment" {
   type        = string
   description = "The deployment environment (e.g., dev, prod)."
 }
+
+variable "region" {
+  type        = string
+  description = "The GCP Region."
+}

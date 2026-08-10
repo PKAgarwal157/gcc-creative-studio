@@ -22,18 +22,9 @@ output "network_name" {
   value       = google_compute_network.vpc.name
 }
 
-output "subnet_us_east4_id" {
-  description = "The ID of the us-east4 subnetwork"
-  value       = google_compute_subnetwork.subnet_us_east4.id
-}
-
-output "subnet_us_central1_id" {
-  value = google_compute_subnetwork.subnet_us_central1.id
-}
-
-output "subnet_us_west1_id" {
-  description = "The ID of the us-west1 subnetwork"
-  value       = google_compute_subnetwork.subnet_us_west1.id
+output "subnetwork_id" {
+  description = "The ID of the subnetwork"
+  value       = google_compute_subnetwork.subnet.id
 }
 
 output "private_vpc_connection_id" {

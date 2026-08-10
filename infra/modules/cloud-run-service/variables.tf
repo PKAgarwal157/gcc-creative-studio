@@ -100,6 +100,7 @@ variable "scaling_max_instances" {
 variable "source_repository_id" {
   type        = string
   description = "The ID of the Cloud Build V2 source repository."
+  default     = null
 }
 
 variable "cpu" {

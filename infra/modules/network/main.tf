@@ -13,33 +13,15 @@
 # limitations under the License.
 
 resource "google_compute_network" "vpc" {
-  name                    = "cs-shared-vpc-${var.environment}"
+  name                    = "cs-vpc-${var.environment}"
   auto_create_subnetworks = false
   project                 = var.project_id
 }
 
-resource "google_compute_subnetwork" "subnet_us_east4" {
-  name          = "cs-subnet-useast4-${var.environment}"
-  ip_cidr_range = "10.0.1.0/24"
-  region        = "us-east4"
-  network       = google_compute_network.vpc.id
-  project       = var.project_id
-  private_ip_google_access = true
-}
-
-resource "google_compute_subnetwork" "subnet_us_central1" {
-  name          = "cs-subnet-uscentral1-${var.environment}"
-  ip_cidr_range = "10.0.3.0/24"
-  region        = "us-central1"
-  network       = google_compute_network.vpc.id
-  project       = var.project_id
-  private_ip_google_access = true
-}
-
-resource "google_compute_subnetwork" "subnet_us_west1" {
-  name          = "cs-subnet-uswest1-${var.environment}"
-  ip_cidr_range = "10.0.2.0/24"
-  region        = "us-west1"
+resource "google_compute_subnetwork" "subnet" {
+  name          = "cs-subnet-${var.environment}"
+  ip_cidr_range = "10.0.0.0/24"
+  region        = var.region
   network       = google_compute_network.vpc.id
   project       = var.project_id
   private_ip_google_access = true
@@ -52,7 +34,7 @@ resource "google_compute_subnetwork" "subnet_us_west1" {
 }
 
 resource "google_compute_global_address" "private_ip_address" {
-  name          = "cs-private-ip-address-${var.environment}"
+  name          = "cs-private-ip-address"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16

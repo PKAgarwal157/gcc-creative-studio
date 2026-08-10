@@ -71,8 +71,9 @@ locals {
 
 # --- Cloud Build Repository Connection ---
 resource "google_cloudbuildv2_repository" "source_repo" {
+  count             = var.github_conn_name != "local-bypass" ? 1 : 0
   provider          = google-beta
-  name              = "${var.github_repo_owner}-${var.github_repo_name}"
+  name              = var.github_repo_name
   location          = var.gcp_region
   parent_connection = "projects/${var.gcp_project_id}/locations/${var.gcp_region}/connections/${var.github_conn_name}"
   remote_uri        = "https://github.com/${var.github_repo_owner}/${var.github_repo_name}.git"
@@ -89,6 +90,7 @@ data "google_secret_manager_secret_version" "db_password" {
 module "network" {
   source      = "../network"
   project_id  = var.gcp_project_id
+  region      = var.gcp_region
   environment = var.environment
 }
 
@@ -96,13 +98,14 @@ module "network" {
 module "postgresql" {
   source      = "../postgresql"
   project_id  = var.gcp_project_id
-  region      = "us-east4"
+  region      = var.gcp_region
   
   # Pass the ACTUAL value to create the user
   db_password = data.google_secret_manager_secret_version.db_password.secret_data
 
   vpc_network_id = module.network.network_id
-  depends_on     = [module.network]
+
+  depends_on = [module.network]
 }
 
 # --- Service Module Calls ---
@@ -121,12 +124,12 @@ module "backend_service" {
   cloudbuild_yaml_path  = "backend/cloudbuild.yaml"
   included_files_glob   = ["backend/**"]
   container_env_vars    = local.backend_env_vars
-  runtime_secrets = var.backend_runtime_secrets
+  runtime_secrets       = var.backend_runtime_secrets
   custom_audiences      = var.backend_custom_audiences
   scaling_min_instances = 1
-  source_repository_id = google_cloudbuildv2_repository.source_repo.id
-  cpu = var.be_cpu
-  memory = var.be_memory
+  source_repository_id  = var.github_conn_name != "local-bypass" ? google_cloudbuildv2_repository.source_repo[0].id : null
+  cpu                   = var.be_cpu
+  memory                = var.be_memory
   build_substitutions   = merge(var.be_build_substitutions,
     {
       _REGION = var.gcp_region
@@ -143,25 +146,26 @@ module "backend_service" {
   db_secret_id              = "creative-studio-db-password"
 
   vpc_network_id    = module.network.network_id
-  vpc_subnetwork_id = var.gcp_region == "us-central1" ? module.network.subnet_us_central1_id : (var.gcp_region == "us-west1" ? module.network.subnet_us_west1_id : module.network.subnet_us_east4_id)
+  vpc_subnetwork_id = module.network.subnetwork_id
 }
 
 resource "google_firebase_project" "default" {
   provider = google-beta
-  project = var.gcp_project_id
+  project  = var.gcp_project_id
 }
 
 module "frontend_service" {
   source = "../firebase-hosting-service"
 
-  source_repository_id = google_cloudbuildv2_repository.source_repo.id
+  source_repository_id = var.github_conn_name != "local-bypass" ? google_cloudbuildv2_repository.source_repo[0].id : null
   gcp_project_id       = var.gcp_project_id
-  gcp_region            = var.gcp_region
+  gcp_region           = var.gcp_region
   firebase_project_id  = google_firebase_project.default.project
   service_name         = var.gcp_project_id
   environment          = var.environment
   resource_prefix      = "cs-fe"
   github_branch_name   = var.github_branch_name
+  github_conn_name     = var.github_conn_name
   cloudbuild_yaml_path = "frontend/cloudbuild-deploy.yaml"
   included_files_glob  = ["frontend/**"]
   firebase_site_id     = var.firebase_site_id != "" ? var.firebase_site_id : var.gcp_project_id
