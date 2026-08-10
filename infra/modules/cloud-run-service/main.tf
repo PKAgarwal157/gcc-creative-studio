@@ -39,6 +39,15 @@ resource "google_cloud_run_v2_service" "this" {
 
   template {
     service_account = google_service_account.run_sa.email
+    
+    vpc_access {
+      network_interfaces {
+        network    = var.vpc_network_id
+        subnetwork = var.vpc_subnetwork_id
+      }
+      egress = "ALL_TRAFFIC"
+    }
+
     volumes {
       name = "cloudsql"
       cloud_sql_instance {
@@ -57,6 +66,10 @@ resource "google_cloud_run_v2_service" "this" {
       env {
         name = "INSTANCE_CONNECTION_NAME"
         value = var.cloud_sql_connection_name
+      }
+      env {
+        name  = "DB_IP_TYPE"
+        value = var.db_ip_type
       }
       env {
         name = "DB_HOST"
@@ -126,6 +139,7 @@ resource "google_cloud_run_v2_service" "this" {
 }
 
 resource "google_cloudbuild_trigger" "this" {
+  count           = var.github_conn_name != "local-bypass" ? 1 : 0
   name            = "${var.service_name}-trigger"
   location        = var.gcp_region
   service_account = google_service_account.trigger_sa.id

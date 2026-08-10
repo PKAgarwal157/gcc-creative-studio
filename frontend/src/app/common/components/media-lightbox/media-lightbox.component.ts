@@ -61,6 +61,10 @@ export class MediaLightboxComponent
     return this.mediaItem?.mimeType?.startsWith('image/') ?? false;
   }
 
+  get showOmni(): boolean {
+    return true;
+  }
+
   get showEditButton(): boolean {
     return this.isImage;
   }
@@ -78,6 +82,10 @@ export class MediaLightboxComponent
     index: number;
   }>();
   @Output() sendToVtoClicked = new EventEmitter<number>();
+  @Output() editWithOmniClicked = new EventEmitter<{
+    mediaItem: MediaItem;
+    selectedIndex: number;
+  }>();
   @Output() extendWithAiClicked = new EventEmitter<{
     mediaItem: MediaItem;
     selectedIndex: number;
@@ -499,6 +507,15 @@ export class MediaLightboxComponent
 
   onSendToVtoClick(): void {
     this.sendToVtoClicked.emit(this.selectedIndex);
+  }
+
+  onEditWithOmniClick(): void {
+    if (this.mediaItem) {
+      this.editWithOmniClicked.emit({
+        mediaItem: this.mediaItem as MediaItem,
+        selectedIndex: this.selectedIndex,
+      });
+    }
   }
 
   onExtendWithAiClick() {

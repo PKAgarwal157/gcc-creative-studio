@@ -16,7 +16,7 @@ from typing import Any
 
 import google.auth
 from google.auth.exceptions import DefaultCredentialsError
-from pydantic import Field, computed_field, model_validator
+from pydantic import Field, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -69,9 +69,10 @@ class ConfigService(BaseSettings):
     USE_CLOUD_SQL_AUTH_PROXY: bool = False
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
+    DB_IP_TYPE: str = "PUBLIC"
 
     # --- Veo ---
-    VEO_MODEL_ID: str = "veo-2.0-generate-001"
+    VEO_MODEL_ID: str = "veo-3.1-generate-001"
 
     # --- VTO ---
     VTO_MODEL_ID: str = "virtual-try-on-001"
@@ -95,7 +96,7 @@ class ConfigService(BaseSettings):
     ADMIN_USER_EMAIL: str = "system"
 
     # --- Workflows ---
-    WORKFLOWS_LOCATION: str = "us-central1"
+    WORKFLOWS_LOCATION: str = "us-east4"
     WORKFLOWS_EXECUTOR_URL: str = (
         "http://localhost:8080"  # This service could be deployed alone in the future
     )
@@ -113,6 +114,14 @@ class ConfigService(BaseSettings):
             except DefaultCredentialsError:
                 pass  # Fail gracefully, let required fields catch this if needed.
         return values
+
+    @field_validator("ENVIRONMENT", mode="before")
+    @classmethod
+    def default_environment_if_empty(cls, v: Any) -> Any:
+        """Sets ENVIRONMENT to default 'development' if empty or whitespace."""
+        if v is None or not str(v).strip():
+            return "development"
+        return str(v).strip()
 
     # <<< FIX 2: New validator to handle dependent default values >>>
     @model_validator(mode="after")

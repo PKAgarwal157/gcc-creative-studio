@@ -37,10 +37,29 @@ class UserService:
         """Retrieves a user by their email. If the user exists, it returns it.
         If the user doesn't exist, it creates a new user document.
         """
-        # 1. Check if the user already exists in the database.
-        existing_user = await self.user_repo.get_by_email(email)
+        from src.config.config_service import config_service
+        is_admin_email = bool(
+            config_service.ADMIN_USER_EMAIL
+            and config_service.ADMIN_USER_EMAIL != "system"
+            and email.lower() == config_service.ADMIN_USER_EMAIL.lower()
+        )
 
         if existing_user:
+            if is_admin_email:
+                existing_roles = [
+                    r.value if isinstance(r, UserRoleEnum) else r
+                    for r in existing_user.roles
+                ]
+                if UserRoleEnum.ADMIN.value not in existing_roles:
+                    updated_roles = list(
+                        set(
+                            existing_roles
+                            + [UserRoleEnum.USER.value, UserRoleEnum.ADMIN.value]
+                        )
+                    )
+                    existing_user = await self.user_repo.update(
+                        existing_user.id, {"roles": updated_roles}
+                    )
             return existing_user
 
         # 2. If the user does not exist, create a new User using UserCreateDto
@@ -51,12 +70,11 @@ class UserService:
             picture=picture or "",
         )
 
-        # We need to ensure roles are set, but UserCreateDto doesn't have roles.
-        # The repository create method takes a Pydantic model or dict.
-        # If we pass UserCreateDto, we miss 'roles'.
-        # We can pass a dict that includes roles.
         user_data = new_user_dto.model_dump()
-        user_data["roles"] = [UserRoleEnum.USER]
+        roles = [UserRoleEnum.USER]
+        if is_admin_email:
+            roles.append(UserRoleEnum.ADMIN)
+        user_data["roles"] = roles
 
         # 3. Call the repository's create() method
         return await self.user_repo.create(user_data)

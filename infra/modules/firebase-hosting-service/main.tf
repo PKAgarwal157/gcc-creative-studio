@@ -27,6 +27,7 @@ resource "google_service_account" "trigger_sa" {
 
 # 3. Create the build trigger
 resource "google_cloudbuild_trigger" "this" {
+  count           = var.github_conn_name != "local-bypass" ? 1 : 0
   name            = "${var.service_name}-trigger"
   location        = var.gcp_region
   service_account = google_service_account.trigger_sa.id
