@@ -150,9 +150,9 @@ chmod +x bootstrap.sh
 #### Interactive Prompts Walkthrough:
 1. **Prerequisites & Terraform**: Script auto-detects `gcloud`, `git`, `jq`, `uv`, and installs Terraform `1.14.1` into `~/bin`.
 2. **Project ID**: Enter your new Project ID (`$NEW_PROJECT_ID`).
-3. **Repository URL**: Enter `https://github.com/<YOUR_USER>/gcc-creative-studio.git` and select branch **`private-ip-cloudsql-7-Aug`**.
+3. **Repository URL**: Enter `https://github.com/<YOUR_USER>/gcc-creative-studio.git` and select branch **`main`** (or `private-ip-cloudsql-7-Aug`).
 4. **Environment Name**: Press `[Enter]` for default (`dev-infra`).
-5. **GCS State Bucket**: Type `n` (Script auto-creates `gs://<PROJECT_ID>-cstudio-dev-infra-tfstate`).
+5. **GCS State Bucket**: Type `n` (Script auto-creates `gs://<PROJECT_ID>-cstudio-dev-infra-tfstate`) or enter the exact bucket name if `y`.
 6. **Host Connection**: Enter **`cstudio-github-con`**.
 7. **OAuth Client ID**: Paste your generated **OAuth 2.0 Web Client ID**.
 8. **Firebase App**: Script auto-creates Firebase web app `cstudio-fe` and extracts SDK keys.
@@ -163,7 +163,7 @@ chmod +x bootstrap.sh
 
 ### Step 3: Post-Bootstrap Steps (Critical for Private IP & Ingress)
 
-Because `bootstrap.sh` provisions a private IP database and Firebase Hosting rewrites, run these 2 commands:
+Because `bootstrap.sh` provisions a private IP database and Firebase Hosting rewrites, run these post-deployment steps:
 
 #### 1. Allow Firebase Hosting to Invoke Cloud Run:
 ```bash
@@ -174,13 +174,20 @@ gcloud run services add-iam-policy-binding cstudio-be \
   --role="roles/run.invoker"
 ```
 
-#### 2. Seed Database Tables, Workspaces & 47 Templates (Serverless Cloud Run Job):
+#### 2. Seed Database Tables & 47 AI Templates (Serverless Cloud Run Job):
 ```bash
+DB_INSTANCE=$(gcloud sql instances list --project=$NEW_PROJECT_ID --format='value(name)')
 DB_CONN=$(gcloud sql instances list --project=$NEW_PROJECT_ID --format='value(connectionName)')
 
-# Deploy Seeding Job inside the Private VPC
+# A. Ensure Database Catalog & Password are ready
+gcloud sql databases create creative_studio --instance="${DB_INSTANCE}" --project=$NEW_PROJECT_ID 2>/dev/null || true
+
+# B. Get deployed container image tag
+IMAGE_URI=$(gcloud artifacts docker images list us-east4-docker.pkg.dev/${NEW_PROJECT_ID}/cs-be-development-repo --format='value(format("{0}:{1}", package, version))' | head -n 1)
+
+# C. Deploy Seeding Job inside the Private VPC
 gcloud run jobs deploy seed-data-full \
-  --image="us-east4-docker.pkg.dev/${NEW_PROJECT_ID}/cs-be-development-repo/cstudio-be:latest" \
+  --image="${IMAGE_URI}" \
   --region=us-east4 \
   --project=$NEW_PROJECT_ID \
   --service-account="cs-be-development-run@${NEW_PROJECT_ID}.iam.gserviceaccount.com" \
@@ -193,7 +200,7 @@ gcloud run jobs deploy seed-data-full \
   --args="-m,bootstrap.bootstrap" \
   --quiet
 
-# Execute Seeding Job
+# D. Execute Seeding Job
 gcloud run jobs execute seed-data-full --region=us-east4 --project=$NEW_PROJECT_ID --wait
 ```
 
