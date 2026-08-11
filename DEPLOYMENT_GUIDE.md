@@ -166,6 +166,8 @@ chmod +x bootstrap.sh
 Because `bootstrap.sh` provisions a private IP database and Firebase Hosting rewrites, run these post-deployment steps:
 
 #### 1. Allow Firebase Hosting to Invoke Cloud Run:
+> **Why `allUsers` is required:** Firebase Hosting acts as a transparent public reverse proxy for `/api/**` rewrites without injecting internal Google IAM tokens. Cloud Run requires `roles/run.invoker` for `allUsers` at the network layer to accept proxied traffic. Application-level security is strictly enforced by FastAPI backend middleware (which verifies Google OAuth 2.0 JWT tokens on every protected endpoint).
+
 ```bash
 gcloud run services add-iam-policy-binding cstudio-be \
   --region=us-east4 \
